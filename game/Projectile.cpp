@@ -1935,7 +1935,7 @@ void rvDriftingProjectile::Launch( const idVec3 &start, const idVec3 &dir, const
 
 /*
 =================
-rvDriftingProjectile::Launch
+rvDriftingProjectile::UpdateVisualAngles
 =================
 */
 void rvDriftingProjectile::UpdateVisualAngles ( void ) {
