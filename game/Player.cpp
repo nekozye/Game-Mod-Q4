@@ -399,6 +399,8 @@ idInventory::Save
 void idInventory::Save( idSaveGame *savefile ) const {
 	int i;
 
+
+	//Required for adding new currency
 	savefile->WriteInt( maxHealth );
 	savefile->WriteInt( weapons );
 	savefile->WriteInt( powerups );
