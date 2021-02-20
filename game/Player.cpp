@@ -234,6 +234,13 @@ void idInventory::Clear( void ) {
 	memset( ammoIndices, -1, sizeof( int ) * MAX_WEAPONS );
 	memset( startingAmmo, -1, sizeof( int ) * MAX_WEAPONS );
 	memset( ammoRegenTime, -1, sizeof( int ) * MAX_WEAPONS );
+
+
+	//engineering mod START.
+	
+	scrap = 0;
+	maxscrap = 0;
+	
 }
 
 /*
@@ -340,6 +347,14 @@ void idInventory::RestoreInventory( idPlayer *owner, const idDict &dict ) {
 	armor			= dict.GetInt( "armor", "50" );
 	maxarmor		= dict.GetInt( "maxarmor", "100" );
 
+
+	//Engineering Mod START
+
+	scrap = dict.GetInt("scrap", "0");
+	maxscrap = dict.GetInt("maxscrap", "500");
+
+	//Engineering Mod END
+
 	// ammo
 	for( i = 0; i < MAX_AMMOTYPES; i++ ) {
 		name = rvWeapon::GetAmmoNameForIndex ( i );
@@ -400,12 +415,19 @@ void idInventory::Save( idSaveGame *savefile ) const {
 	int i;
 
 
-	//Required for adding new currency
 	savefile->WriteInt( maxHealth );
 	savefile->WriteInt( weapons );
 	savefile->WriteInt( powerups );
 	savefile->WriteInt( armor );
 	savefile->WriteInt( maxarmor );
+
+
+	//Engineering Mod Start
+	
+	savefile->WriteInt(scrap);
+	savefile->WriteInt(maxscrap);
+
+	//Engineering Mod End
 
 	for( i = 0; i < MAX_AMMO; i++ ) {
 		savefile->WriteInt( ammo[ i ] );
@@ -486,6 +508,14 @@ void idInventory::Restore( idRestoreGame *savefile ) {
 	savefile->ReadInt( powerups );
 	savefile->ReadInt( armor );
 	savefile->ReadInt( maxarmor );
+
+
+	//Engineering Mod START
+
+	savefile->ReadInt(scrap); 
+	savefile->ReadInt(maxscrap);
+
+	//Engineering Mod END
 
 	for( i = 0; i < MAX_AMMO; i++ ) {
 		savefile->ReadInt( ammo[ i ] );
@@ -893,6 +923,12 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 		if ( armor >= maxarmor * 2 ) {
 			return false;
 		}
+// Engineering Mod START
+		else if (!idStr::Icmp(statname, "scrap")) {
+			if (scrap >= maxscrap) {
+				return false;
+			}
+// Engineering Mod END
 	} else 	if ( !idStr::Icmp( statname, "health" ) ) {
 		if ( owner->health >= maxHealth ) {
 			return false;
