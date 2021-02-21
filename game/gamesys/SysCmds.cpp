@@ -476,6 +476,18 @@ void GiveStuffToPlayer( idPlayer* player, const char* name, const char* value )
 			return;
 		}
 	}
+
+
+//Engineering Mod Start
+	if (give_all || idStr::Icmp(name, "scrap") == 0) {
+		player->inventory.scrap = player->inventory.maxscrap;
+		if (!give_all) {
+			return;
+		}
+	}
+//Engineering Mod End
+
+
 // RAVEN BEGIN
 	if (idStr::Icmp(name, "quad") == 0) {
 		player->GivePowerUp( POWERUP_QUADDAMAGE, SEC2MS( 30.0f ) );

@@ -923,8 +923,9 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 		if ( armor >= maxarmor * 2 ) {
 			return false;
 		}
+	}
 // Engineering Mod START
-		else if (!idStr::Icmp(statname, "scrap")) {
+	else if (!idStr::Icmp(statname, "scrap")) {
 			if (scrap >= maxscrap) {
 				return false;
 			}
@@ -3458,7 +3459,28 @@ void idPlayer::UpdateHudStats( idUserInterface *_hud ) {
 			_hud->HandleNamedEvent ( "updateBossBar" );
 		}
 	}
-		
+
+	//Engineering Mod START
+	// setup for currency UI
+	
+	//see if the internal data and the gui data match
+	temp = _hud->State().GetInt("player_scrap", "-1");
+	if (temp != inventory.scrap) {
+		//if it doesnt....
+
+		//set the player scrap delta, which is the difference that will be fixed.
+		_hud->SetStateInt("player_scrapDelta", temp == -1 ? 0 : (temp - inventory.scrap));
+		//set the player scrap data, to gui
+		_hud->SetStateInt("player_scrap", inventory.scrap);
+		//set the percentage of the scrap data.
+		_hud->SetStateFloat("player_scrappct", idMath::ClampFloat(0.0f, 1.0f, (float)inventory.scrap / (float)inventory.maxscrap));
+		//call updateScrap function event in the gui file
+		_hud->HandleNamedEvent("updateScrap");
+	}
+
+	//Engineering Mod END
+
+
 	// god mode information
 	_hud->SetStateString( "player_god", va( "%i", (godmode && g_showGodDamage.GetBool()) ) );
 	_hud->SetStateString( "player_god_damage", va( "%i", godmodeDamage ) );
@@ -12370,6 +12392,11 @@ void idPlayer::WriteToSnapshot( idBitMsgDelta &msg ) const {
 	msg.WriteDeltaFloat( 0.0f, deltaViewAngles[2] );
 	msg.WriteShort( health );
 	msg.WriteByte( inventory.armor );
+
+	//Engineering Mod START
+	msg.WriteByte(inventory.scrap);
+	//Engineering Mod END
+
  	msg.WriteBits( lastDamageDef, gameLocal.entityDefBits );
 	msg.WriteDir( lastDamageDir, 9 );
 	msg.WriteShort( lastDamageLocation );
@@ -12428,6 +12455,13 @@ void idPlayer::ReadFromSnapshot( const idBitMsgDelta &msg ) {
 	deltaViewAngles[2] = msg.ReadDeltaFloat( 0.0f );
 	health = msg.ReadShort();
 	inventory.armor = msg.ReadByte();
+
+
+	//Engineering Mod START
+	//Has to be in this order to make sense of the msgdlta
+	inventory.scrap = msg.ReadByte();
+	//Engineering Mod END
+
  	lastDamageDef = msg.ReadBits( gameLocal.entityDefBits );
 	lastDamageDir = msg.ReadDir( 9 );
 	lastDamageLocation = msg.ReadShort();
@@ -12629,6 +12663,11 @@ void idPlayer::WritePlayerStateToSnapshot( idBitMsgDelta &msg ) const {
 
 	msg.WriteShort( inventory.weapons );
 	msg.WriteByte( inventory.armor );
+
+	//Engineering Mod START
+	msg.WriteByte(inventory.scrap);
+	//Engineering Mod END
+
 	msg.WriteShort( inventory.powerups );
 
 	for( i = 0; i < MAX_AMMO; i++ ) {
@@ -12654,6 +12693,11 @@ void idPlayer::ReadPlayerStateFromSnapshot( const idBitMsgDelta &msg ) {
 
 	inventory.weapons = msg.ReadShort();
 	inventory.armor = msg.ReadByte();
+
+	//Engineering Mod START
+	inventory.scrap = msg.ReadByte();
+	//Engineering Mod END
+
 	inventory.powerups = msg.ReadShort();
 
 	for( i = 0; i < MAX_AMMO; i++ ) {
@@ -13395,6 +13439,9 @@ idPlayer::GetDebugInfo
 void idPlayer::GetDebugInfo ( debugInfoProc_t proc, void* userData ) {
 	idActor::GetDebugInfo ( proc, userData );
 	proc ( "idPlayer", "inventory.armor",		va("%d", inventory.armor ), userData );
+	//Engineering Mod START
+	proc("idPlayer", "inventory.scrap", va("%d", inventory.scrap), userData);
+	//Engineering Mod END
 	proc ( "idPlayer", "inventory.weapons",		va("%d", inventory.weapons ), userData );
 	proc ( "idPlayer", "inventory.powerups",	va("%d", inventory.powerups ), userData );
 }

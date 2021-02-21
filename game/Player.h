@@ -204,9 +204,10 @@ public:
 	int						armor;
 	//TODO: Try to add scrap point (currency) in this place. Need to also have "set scrap" and "get scrap" points.
 	//TODO: Edit every single function inside this, that "modifies" armor, without clear intention of damage or gaining armor. further studies required.
-
+	// Engineering Mod START
 	int						scrap;
 	int						maxscrap;
+	// Engineering Mod END
 
 	int						maxarmor;
 	int						ammo[ MAX_AMMO ];
