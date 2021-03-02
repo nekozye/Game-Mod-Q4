@@ -31,7 +31,7 @@ public:
 protected:
 	//Engineering Mod START
 
-	idVec3				HitscanPosition(const idDict& dict, const idVec3& muzzleOrigin, const idMat3& muzzleAxis, int num_hitscans);
+	void				SpawnEntityBasedOnContact(void);
 
 	//Engineering Mod END
 
@@ -49,8 +49,6 @@ private:
 	int					fireHeldTime;
 
 
-	
-
 	stateResult_t		State_Raise(const stateParms_t& parms);
 	stateResult_t		State_Lower(const stateParms_t& parms);
 	stateResult_t		State_Idle(const stateParms_t& parms);
@@ -63,6 +61,15 @@ private:
 CLASS_DECLARATION(rvWeapon, rvWeaponTurretCaller)
 END_CLASS
 
+
+/*
+================
+rvWeaponTurretCaller::rvWeaponTurretCaller
+================
+*/
+void rvWeaponTurretCaller::SpawnEntityBasedOnContact(void) {
+
+}
 
 
 
@@ -380,7 +387,7 @@ stateResult_t rvWeaponTurretCaller::State_Fire(const stateParms_t& parms) {
 		}
 
 
-
+		//Fireing START edit this place for spawning enemies in hitscan instead
 		if (gameLocal.time - fireHeldTime > chargeTime) {
 
 			//fix this part for fire?
@@ -396,6 +403,8 @@ stateResult_t rvWeaponTurretCaller::State_Fire(const stateParms_t& parms) {
 		fireHeldTime = 0;
 
 		return SRESULT_STAGE(FIRE_WAIT);
+
+		//Fireing END edit this place for spawning enemies in hitscan instead
 
 	case FIRE_WAIT:
 		if (AnimDone(ANIMCHANNEL_ALL, 4)) {
