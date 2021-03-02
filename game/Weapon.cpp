@@ -271,6 +271,7 @@ void rvViewWeapon::Think( void ) {
 	// do nothing because the present is called from the player through PresentWeapon
 }
 
+
 /*
 =====================
 rvViewWeapon::ConvertLocalToWorldTransform
@@ -2496,7 +2497,6 @@ void rvWeapon::AddToClip ( int amount ) {
 
 ***********************************************************************/
 
-
 /*
 ================
 rvWeapon::Attack
@@ -2736,6 +2736,13 @@ void rvWeapon::OnLaunchProjectile ( idProjectile* proj ) {
 ================
 rvWeapon::Hitscan
 ================
+
+dictionary = list made using def files
+muzzleorigin = the "muzzleorigin" coordinates using 3dvector
+muzzleAxis = direction of the muzzle, pointing. (ray) part of the raycasting?
+spread = how weapon spreads. high the value, 
+
+
 */
 void rvWeapon::Hitscan( const idDict& dict, const idVec3& muzzleOrigin, const idMat3& muzzleAxis, int num_hitscans, float spread, float power ) {
 	idVec3  fxOrigin;
@@ -2757,6 +2764,7 @@ void rvWeapon::Hitscan( const idDict& dict, const idVec3& muzzleOrigin, const id
 	GetGlobalJointTransform( true, flashJointView, fxOrigin, fxAxis, dict.GetVector( "fxOriginOffset" ) );
 
 	if ( gameLocal.isServer ) {
+		//recording stuff for server.
 
 		assert( hitscanAttackDef >= 0 );
 		assert( owner && owner->entityNumber < MAX_CLIENTS );

@@ -282,6 +282,14 @@ void idInventory::GetPersistantData( idDict &dict ) {
 	// armor
 	dict.SetInt( "armor", armor );
 
+	//Engineering Mod START
+
+	//scrap
+	dict.SetInt( "scrap", scrap);
+
+	//Engineering Mod END
+
+
 	// ammo
 	for( i = 0; i < MAX_AMMOTYPES; i++ ) {
 		name = rvWeapon::GetAmmoNameForIndex( i );
@@ -350,7 +358,7 @@ void idInventory::RestoreInventory( idPlayer *owner, const idDict &dict ) {
 
 	//Engineering Mod START
 
-	scrap = dict.GetInt("scrap", "0");
+	scrap = dict.GetInt("scrap", "150");
 	maxscrap = dict.GetInt("maxscrap", "500");
 
 	//Engineering Mod END
