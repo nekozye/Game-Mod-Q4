@@ -2626,6 +2626,19 @@ idProjectile* idAI::AttackRanged (
 		dir.Normalize();
 
 		if ( attack_hitscan ) {
+			/*
+				attackDict -> hitscanDict
+				muzzleOrigin -> origOrigin
+				dir -> origDir
+				muzzleOrigin -> origFxOrigin
+				this -> owner
+				false -> noFX
+				combat.aggressiveScale -> damagescale
+				NULL -> additionalIgnore
+				NULL -> areas
+		    */
+
+
 			gameLocal.HitScan( *attackDict, muzzleOrigin, dir, muzzleOrigin, this, false, combat.aggressiveScale );		
 		} else {
 			// launch the projectile

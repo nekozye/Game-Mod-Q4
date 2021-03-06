@@ -42,9 +42,6 @@ protected:
 
 private:
 
-	int					chargeTime;
-	int					chargeDelay;
-	idVec2				chargeGlow;
 	bool				fireForced;
 	int					fireHeldTime;
 
@@ -68,7 +65,46 @@ rvWeaponTurretCaller::rvWeaponTurretCaller
 ================
 */
 void rvWeaponTurretCaller::SpawnEntityBasedOnContact(void) {
+	idPlayer* player;
+	idVec3 end;
+	trace_t tracer;
+	idVec3 start;
+	idMat3 viewaxe;
+	idVec3 dir;
 
+
+	// calculate the muzzle position
+	if (barrelJointView != INVALID_JOINT && spawnArgs.GetBool("launchFromBarrel")) {
+		// there is an explicit joint for the muzzle
+		GetGlobalJointTransform(true, barrelJointView, start, viewaxe);
+	}
+	else {
+		// go straight out of the view
+		start = playerViewOrigin;
+		start += playerViewAxis[0] * muzzleOffset;
+	}
+
+
+	dir = playerViewAxis[0] + playerViewAxis[2] - playerViewAxis[1];
+
+
+	player = gameLocal.GetLocalPlayer();
+	end = start + ((8192 * 16) * viewaxe[0]);
+
+
+
+	gameLocal.TracePoint(player, tracer, start, dir, MASK_OPAQUE, player);
+
+
+	if (tracer.fraction < 1.0)
+	{
+		gameLocal.Printf("coords {x:%f y:%f z:%f}",tracer.c.point.x,tracer.c.point.y,tracer.c.point.z);
+	}
+	else
+	{
+		gameLocal.Printf("No coords detected");
+	}
+	
 }
 
 
@@ -139,24 +175,17 @@ bool rvWeaponTurretCaller::UpdateAttack(void) {
 		if (fireHeldTime == 0) {
 			nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier(PMOD_FIRERATE));
 			fireHeldTime = gameLocal.time;
-			viewModel->SetShaderParm(BLASTER_SPARM_CHARGEGLOW, chargeGlow[0]);
 		}
 	}
 
 	// If they have the charge mod and they have overcome the initial charge 
 	// delay then transition to the charge state.
 	if (fireHeldTime != 0) {
-		if (gameLocal.time - fireHeldTime > chargeDelay) {
-			SetState("Charge", 4);
-			return true;
-		}
-
 		// If the fire button was let go but was pressed at one point then 
 		// release the shot.
 		if (!wsfl.attack) {
 			idPlayer * player = gameLocal.GetLocalPlayer();
 			if (player)	{
-
 				if (player->GuiActive())	{
 					//make sure the player isn't looking at a gui first
 					SetState("Lower", 0);
@@ -181,9 +210,6 @@ void rvWeaponTurretCaller::Spawn(void) {
 	viewModel->SetShaderParm(BLASTER_SPARM_CHARGEGLOW, 0);
 	SetState("Raise", 0);
 
-	chargeGlow = spawnArgs.GetVec2("chargeGlow");
-	chargeTime = SEC2MS(spawnArgs.GetFloat("chargeTime"));
-	chargeDelay = SEC2MS(spawnArgs.GetFloat("chargeDelay"));
 
 	fireHeldTime = 0;
 	fireForced = false;
@@ -197,9 +223,6 @@ rvWeaponTurretCaller::Save
 ================
 */
 void rvWeaponTurretCaller::Save(idSaveGame *savefile) const {
-	savefile->WriteInt(chargeTime);
-	savefile->WriteInt(chargeDelay);
-	savefile->WriteVec2(chargeGlow);
 	savefile->WriteBool(fireForced);
 	savefile->WriteInt(fireHeldTime);
 }
@@ -210,9 +233,6 @@ rvWeaponTurretCaller::Restore
 ================
 */
 void rvWeaponTurretCaller::Restore(idRestoreGame *savefile) {
-	savefile->ReadInt(chargeTime);
-	savefile->ReadInt(chargeDelay);
-	savefile->ReadVec2(chargeGlow);
 	savefile->ReadBool(fireForced);
 	savefile->ReadInt(fireHeldTime);
 }
@@ -388,19 +408,14 @@ stateResult_t rvWeaponTurretCaller::State_Fire(const stateParms_t& parms) {
 
 
 		//Fireing START edit this place for spawning enemies in hitscan instead
-		if (gameLocal.time - fireHeldTime > chargeTime) {
-
-			//fix this part for fire?
-			Attack(true, 1, spread, 0, 1.0f);
-			PlayEffect("fx_chargedflash", barrelJointView, false);
-			PlayAnim(ANIMCHANNEL_ALL, "chargedfire", parms.blendFrames);
-		}
-		else {
-			Attack(false, 1, spread, 0, 1.0f);
-			PlayEffect("fx_normalflash", barrelJointView, false);
-			PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
-		}
+	
+		Attack(false, 1, spread, 0, 1.0f);
+		PlayEffect("fx_normalflash", barrelJointView, false);
+		PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
+		
 		fireHeldTime = 0;
+
+		SpawnEntityBasedOnContact();
 
 		return SRESULT_STAGE(FIRE_WAIT);
 

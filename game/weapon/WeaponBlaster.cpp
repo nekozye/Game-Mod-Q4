@@ -18,6 +18,10 @@ public:
 	void				Restore				( idRestoreGame *savefile );
 	void				PreSave		( void );
 	void				PostSave	( void );
+	//Engineering Mod START
+	void				SpawnEntityBasedOnContact(void);
+	idVec3				HitFirstTrace(const idDict& hitscanDict, const idVec3& origOrigin, const idVec3& origDir, const idVec3& origFxOrigin, idEntity* owner, bool noFX, idEntity* additionalIgnore, int areas[2]);
+	//Engineering Mod END
 
 protected:
 
@@ -33,6 +37,10 @@ private:
 	bool				fireForced;
 	int					fireHeldTime;
 
+	//engineering mod start
+	static char*		spawnEntity;
+	//engineering mod end
+
 	stateResult_t		State_Raise				( const stateParms_t& parms );
 	stateResult_t		State_Lower				( const stateParms_t& parms );
 	stateResult_t		State_Idle				( const stateParms_t& parms );
@@ -46,6 +54,247 @@ private:
 
 CLASS_DECLARATION( rvWeapon, rvWeaponBlaster )
 END_CLASS
+
+//Engineering Mod START
+void rvWeaponBlaster::SpawnEntityBasedOnContact() {
+
+	const idEntity* player;
+	trace_t	tracer;
+	idVec3 muzzleOrigin;
+	idVec3 start;
+	idVec3 end;
+	idVec3	dir;
+	idDict  dict;
+	float	ang;
+	float	spin;
+	int		areas[2];
+	
+	
+	
+	player = owner;
+	dict = attackDict;
+
+	//calculate the muzzle origin
+	if (barrelJointView != INVALID_JOINT && spawnArgs.GetBool("launchFromBarrel")) {
+		// there is an explicit joint for the muzzle
+		GetGlobalJointTransform(true, barrelJointView, muzzleOrigin, muzzleAxis);
+	}
+	else {
+		// go straight out of the view
+		muzzleOrigin = playerViewOrigin;
+		muzzleAxis = playerViewAxis;
+		muzzleOrigin += playerViewAxis[0] * muzzleOffset;
+	}
+
+
+	// Track down traces
+	ang = 0;
+	spin = 0;
+
+	dir = playerViewAxis[0];
+	dir.Normalize();
+
+
+	//Start Hitscan Vector Mathing for constructing vector origining from the muzzle
+
+
+	idVec3  fxOrigin;
+	idMat3  fxAxis;
+
+	GetGlobalJointTransform(true, flashJointView, fxOrigin, fxAxis, dict.GetVector("fxOriginOffset"));
+
+	float spreadRad = DEG2RAD(spread);
+		if (weaponDef->dict.GetBool("machinegunSpreadStyle")) {
+			float r = gameLocal.random.RandomFloat() * idMath::PI * 2.0f;
+			float u = idMath::Sin(r) * gameLocal.random.CRandomFloat() * spread * 16;
+			r = idMath::Cos(r) * gameLocal.random.CRandomFloat() * spread * 16;
+
+			end = muzzleOrigin + ((8192 * 16) * playerViewAxis[0]);
+			end += (r * playerViewAxis[1]);
+			end += (u * playerViewAxis[2]);
+
+			dir = end - muzzleOrigin;
+		}
+		else if (weaponDef->dict.GetBool("shotgunSpreadStyle")) {
+			float r = gameLocal.random.CRandomFloat() * spread * 16;
+			float u = gameLocal.random.CRandomFloat() * spread * 16;
+			end = muzzleOrigin + ((8192 * 16) * playerViewAxis[0]);
+			end += (r * playerViewAxis[1]);
+			end += (u * playerViewAxis[2]);
+			dir = end - muzzleOrigin;
+		}
+		else {
+			ang = idMath::Sin(spreadRad * gameLocal.random.RandomFloat());
+			spin = (float)DEG2RAD(360.0f) * gameLocal.random.RandomFloat();
+			dir = playerViewAxis[0] + playerViewAxis[2] * (ang * idMath::Sin(spin)) - playerViewAxis[1] * (ang * idMath::Cos(spin));
+		}
+		dir.Normalize();
+
+		//trace using the tracer bound
+		idVec3 firstPointToHit;
+		
+		firstPointToHit = HitFirstTrace(dict, muzzleOrigin, dir, fxOrigin, owner, false, NULL, areas);
+		
+
+		//"snap" the vector to the gridspace of turrets. 
+
+		float pointz = firstPointToHit.z;
+
+		firstPointToHit.SnapInt();
+
+		firstPointToHit.z = pointz;
+
+		float pointx = firstPointToHit.x;
+		float pointy = firstPointToHit.y;
+
+		pointx = pointx / 160.0f;
+
+		//TODO: finish the "snapping" of the grid to largegrid in map
+
+
+
+		//construct spawning entity
+		idDict entityDict;
+		float yaw;
+
+		yaw = owner->viewAngles.yaw;
+		
+
+		//set class. this will be different. later if we make more, please change this to multiple turret.
+		entityDict.Set("classname", "monster_turret");
+		//set angle as 0, so new spawned turret faces one place, not the opposite of player.
+		entityDict.Set("angle", "0");
+		entityDict.Set("origin", firstPointToHit.ToString());
+
+		
+
+
+		idEntity *newEnt = NULL;
+		gameLocal.SpawnEntityDef(entityDict, &newEnt);
+	
+}
+		//Engineering Mod END
+
+//hitscan copy
+
+idVec3 rvWeaponBlaster::HitFirstTrace(
+	const idDict&	hitscanDict,
+	const idVec3&	origOrigin,
+	const idVec3&	origDir,
+	const idVec3&	origFxOrigin,
+	idEntity*		owner,
+	bool			noFX,
+	// twhitaker: added additionalIgnore parameter
+	idEntity*		additionalIgnore,
+	int				areas[2])
+{
+	trace_t		tr;
+	idVec3		dir;
+	idVec3		origin;
+	idVec3		fxOrigin;
+	idVec3		fxDir;
+	idVec3		impulse;
+	idVec4		hitscanTint(1.0f, 1.0f, 1.0f, 1.0f);
+	float		tracerChance;
+	idEntity*	ignore;
+	float		penetrate;
+
+	if (areas) {
+		areas[0] = gameLocal.pvs.GetPVSArea(origFxOrigin);
+		areas[1] = -1;
+	}
+
+	ignore = owner;
+	penetrate = hitscanDict.GetFloat("penetrate");
+
+	if (hitscanDict.GetBool("hitscanTint") && owner->IsType(idPlayer::GetClassType())) {
+		hitscanTint = ((idPlayer*)owner)->GetHitscanTint();
+	}
+
+	// twhitaker: additionalIgnore parameter
+	if (!additionalIgnore) {
+		additionalIgnore = ignore;
+	}
+
+	origin = origOrigin;
+	fxOrigin = origFxOrigin;
+	dir = origDir;
+	tracerChance = ((g_perfTest_weaponNoFX.GetBool()) ? 0 : hitscanDict.GetFloat("tracerchance", "0"));
+
+		idVec3		start;
+		idVec3		end;
+		idEntity*	ent;
+		idEntity*	actualHitEnt;
+		int			contents;
+		int			collisionArea;
+		idVec3		collisionPoint;
+		bool		tracer;
+
+		// Calculate the end point of the trace
+		start = origin;
+		if (g_perfTest_hitscanShort.GetBool()) {
+			end = start + (dir.ToMat3() * idVec3(idMath::ClampFloat(0, 2048, hitscanDict.GetFloat("range", "2048")), 0, 0));
+		}
+		else {
+			end = start + (dir.ToMat3() * idVec3(hitscanDict.GetFloat("range", "40000"), 0, 0));
+		}
+		contents = MASK_SHOT_RENDERMODEL | CONTENTS_WATER | CONTENTS_PROJECTILE;
+
+		gameLocal.TracePoint(owner, tr, start, end, contents, additionalIgnore);
+		
+		
+		
+		//uncomment this to see the tracking setup
+		//gameRenderWorld->DebugArrow(colorRed, start, end, 10, 5000);
+		
+		
+		
+		// RAVEN END
+
+		// If the hitscan hit a no impact surface we can just return out
+		//assert( tr.c.material );
+		if (tr.fraction >= 1.0f || (tr.c.material && tr.c.material->GetSurfaceFlags() & SURF_NOIMPACT)) {
+			gameLocal.PlayEffect(hitscanDict, "fx_path", fxOrigin, dir.ToMat3(), false, tr.endpos, false, EC_IGNORE, hitscanTint);
+			if (gameLocal.random.RandomFloat() < tracerChance) {
+				gameLocal.PlayEffect(hitscanDict, "fx_tracer", fxOrigin, dir.ToMat3(), false, tr.endpos);
+				tracer = true;
+			}
+			else {
+				tracer = false;
+			}
+
+			if (areas) {
+				collisionArea = gameLocal.pvs.GetPVSArea(tr.endpos);
+				if (collisionArea != areas[0]) {
+					areas[1] = collisionArea;
+				}
+			}
+
+			idVec3 newvec;
+
+			return newvec;
+		}
+
+		// computing the collisionArea from the collisionPoint fails sometimes
+		if (areas) {
+			collisionArea = gameLocal.pvs.GetPVSArea(tr.c.point);
+			if (collisionArea != areas[0]) {
+				areas[1] = collisionArea;
+			}
+		}
+
+		collisionPoint = tr.c.point - (tr.c.normal * tr.c.point - tr.c.dist) * tr.c.normal;
+		ent = gameLocal.entities[tr.c.entityNum];
+		actualHitEnt = NULL;
+		start = collisionPoint;
+
+		assert(false);
+
+		return collisionPoint;
+}
+
+
+
 
 /*
 ================
@@ -226,6 +475,8 @@ CLASS_STATES_DECLARATION ( rvWeaponBlaster )
 	STATE ( "Fire",							rvWeaponBlaster::State_Fire )
 	STATE ( "Flashlight",					rvWeaponBlaster::State_Flashlight )
 END_CLASS_STATES
+
+
 
 /*
 ================
@@ -435,6 +686,9 @@ stateResult_t rvWeaponBlaster::State_Fire ( const stateParms_t& parms ) {
 				PlayEffect ( "fx_normalflash", barrelJointView, false );
 				PlayAnim( ANIMCHANNEL_ALL, "fire", parms.blendFrames );
 			}
+
+			SpawnEntityBasedOnContact();
+
 			fireHeldTime = 0;
 			
 			return SRESULT_STAGE(FIRE_WAIT);

@@ -1457,7 +1457,7 @@ bool idClip::Translation( trace_t &results, const idVec3 &start, const idVec3 &e
 // RAVEN BEGIN
 // rjohnson: added debug line drawing for traces
 	if ( g_showCollisionTraces.GetInteger() >= 2 && !g_stopTime.GetBool() ) {
-		gameRenderWorld->DebugLine( colorCyan, start, end, 1000 );
+		gameRenderWorld->DebugArrow( colorCyan, start, end, 30 ,1000 );
 	}
 // RAVEN END
 
