@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include "../Game_local.h"
+#include "AI_Manager.h"
 
 class rvMonsterTurret : public idAI {
 public:
@@ -51,6 +52,8 @@ rvMonsterTurret::rvMonsterTurret ( ) {
 	shieldHealth = 0;
 }
 
+
+
 void rvMonsterTurret::InitSpawnArgsVariables ( void ) {
 	maxShots	= spawnArgs.GetInt ( "maxShots", "1" );
 	minShots	= spawnArgs.GetInt ( "minShots", "1" );
@@ -65,6 +68,8 @@ void rvMonsterTurret::Spawn ( void ) {
 
 	shieldHealth = spawnArgs.GetInt ( "shieldHealth" );
 	health += shieldHealth;
+
+	
 
 	InitSpawnArgsVariables();
 	shots		= 0;

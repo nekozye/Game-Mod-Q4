@@ -1179,6 +1179,8 @@ bool idAI::MoveOutOfRange( idEntity *ent, float range, float minRange ) {
 idAI::MoveTo
 =====================
 */
+
+//TODO:research this.
 bool idAI::MoveTo ( const idVec3 &pos, float range ) {
 	idVec3		org;
 	int			areaNum;

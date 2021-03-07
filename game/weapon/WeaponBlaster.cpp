@@ -137,7 +137,8 @@ void rvWeaponBlaster::SpawnEntityBasedOnContact() {
 		
 
 		//"snap" the vector to the gridspace of turrets. 
-
+		//major bug dependant. going to ignore and not even consider this option, unless exact method of how spawning of entity works
+		/*
 		float pointz = firstPointToHit.z;
 
 		firstPointToHit.SnapInt();
@@ -149,9 +150,24 @@ void rvWeaponBlaster::SpawnEntityBasedOnContact() {
 
 		pointx = pointx / 160.0f;
 
-		//TODO: finish the "snapping" of the grid to largegrid in map
+		pointy = pointy / 160.0f;
+		
+		pointx = pointx + 0.5f;
+		pointy = pointy + 0.5f;
+		
+		pointx = idMath::Floor(pointx);
+		pointy = idMath::Floor(pointy);
+
+		pointx = pointx * 160.0f;
+		pointy = pointy * 160.0f;
 
 
+		firstPointToHit.x = pointx;
+		firstPointToHit.y = pointy;
+
+		firstPointToHit.SnapInt();
+		firstPointToHit.z = pointz;
+		*/
 
 		//construct spawning entity
 		idDict entityDict;
