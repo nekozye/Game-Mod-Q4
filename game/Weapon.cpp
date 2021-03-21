@@ -12,6 +12,7 @@
 #include "Projectile.h"
 #include "ai/AI.h"
 #include "ai/AI_Manager.h"
+#include "ai/Monster_Turret.h"
 #include "client/ClientEffect.h"
 //#include "../renderer/tr_local.h"
 
@@ -31,6 +32,7 @@ END_CLASS
 	init
 
 ***********************************************************************/
+
 
 /*
 ================
@@ -54,6 +56,319 @@ rvViewWeapon::~rvViewWeapon()
 rvViewWeapon::~rvViewWeapon() {
 	Clear();
 }
+
+//Engineering
+
+
+//Engineering Mod START
+void rvWeapon::SpawnEntityBasedOnContact() {
+
+	const idEntity* player;
+	trace_t	tracer;
+	idVec3 muzzleOrigin;
+	idVec3 start;
+	idVec3 end;
+	idVec3	dir;
+	idDict  dict;
+	float	ang;
+	float	spin;
+	int		areas[2];
+
+
+
+	player = owner;
+	dict = attackDict;
+
+	//calculate the muzzle origin
+	if (barrelJointView != INVALID_JOINT && spawnArgs.GetBool("launchFromBarrel")) {
+		// there is an explicit joint for the muzzle
+		GetGlobalJointTransform(true, barrelJointView, muzzleOrigin, muzzleAxis);
+	}
+	else {
+		// go straight out of the view
+		muzzleOrigin = playerViewOrigin;
+		muzzleAxis = playerViewAxis;
+		muzzleOrigin += playerViewAxis[0] * muzzleOffset;
+	}
+
+
+	// Track down traces
+	ang = 0;
+	spin = 0;
+
+	dir = playerViewAxis[0];
+	dir.Normalize();
+
+
+	//Start Hitscan Vector Mathing for constructing vector origining from the muzzle
+
+
+	idVec3  fxOrigin;
+	idMat3  fxAxis;
+
+	GetGlobalJointTransform(true, flashJointView, fxOrigin, fxAxis, dict.GetVector("fxOriginOffset"));
+
+	float spreadRad = DEG2RAD(spread);
+	if (weaponDef->dict.GetBool("machinegunSpreadStyle")) {
+		float r = gameLocal.random.RandomFloat() * idMath::PI * 2.0f;
+		float u = idMath::Sin(r) * gameLocal.random.CRandomFloat() * spread * 16;
+		r = idMath::Cos(r) * gameLocal.random.CRandomFloat() * spread * 16;
+
+		end = muzzleOrigin + ((8192 * 16) * playerViewAxis[0]);
+		end += (r * playerViewAxis[1]);
+		end += (u * playerViewAxis[2]);
+
+		dir = end - muzzleOrigin;
+	}
+	else if (weaponDef->dict.GetBool("shotgunSpreadStyle")) {
+		float r = gameLocal.random.CRandomFloat() * spread * 16;
+		float u = gameLocal.random.CRandomFloat() * spread * 16;
+		end = muzzleOrigin + ((8192 * 16) * playerViewAxis[0]);
+		end += (r * playerViewAxis[1]);
+		end += (u * playerViewAxis[2]);
+		dir = end - muzzleOrigin;
+	}
+	else {
+		ang = idMath::Sin(spreadRad * gameLocal.random.RandomFloat());
+		spin = (float)DEG2RAD(360.0f) * gameLocal.random.RandomFloat();
+		dir = playerViewAxis[0] + playerViewAxis[2] * (ang * idMath::Sin(spin)) - playerViewAxis[1] * (ang * idMath::Cos(spin));
+	}
+	dir.Normalize();
+
+
+	
+	//check if it hits the entity
+	
+	idEntity* hitscan_hit_ent = NULL;
+	
+	hitscan_hit_ent = gameLocal.HitScan(dict, muzzleOrigin, dir, fxOrigin, owner, false, 0.0f, owner, 0);
+
+	const char* classnameCheck = hitscan_hit_ent->GetClassname();
+	
+
+	gameLocal.Printf("%s\n", classnameCheck);
+
+
+	if (strcmp(classnameCheck, "rvMonsterTurret") == 0)
+	{
+		rvMonsterTurret* modified_entity = (rvMonsterTurret*)hitscan_hit_ent;
+		int up_cost = spawnArgs.GetInt("upgrade_cost", "20");
+
+		const char* orig_classname = spawnArgs.GetString("spawning_entity_classname", "monster_turret");
+		const char* picked_classname = dict.GetString("spawning_entity_classname", "monster_turret");
+
+
+		if (owner->inventory.scrap >= up_cost && strcmp(orig_classname, picked_classname) == 0)
+		{
+			PlayAnim(ANIMCHANNEL_ALL, "fire", 0);
+			modified_entity->upgradeTurretBasedOnStats();
+			owner->inventory.scrap = owner->inventory.scrap - up_cost;
+		}
+		
+	}
+	else
+	{
+		//trace using the tracer bound
+		idVec3 firstPointToHit;
+
+		firstPointToHit = HitFirstTrace(dict, muzzleOrigin, dir, fxOrigin, owner, false, NULL, areas);
+
+					
+
+
+		//"snap" the vector to the gridspace of turrets. 
+		//major bug dependant. going to ignore and not even consider this option, unless exact method of how spawning of entity works
+		/*
+		float pointz = firstPointToHit.z;
+
+		firstPointToHit.SnapInt();
+
+		firstPointToHit.z = pointz;
+
+		float pointx = firstPointToHit.x;
+		float pointy = firstPointToHit.y;
+
+		pointx = pointx / 160.0f;
+
+		pointy = pointy / 160.0f;
+
+		pointx = pointx + 0.5f;
+		pointy = pointy + 0.5f;
+
+		pointx = idMath::Floor(pointx);
+		pointy = idMath::Floor(pointy);
+
+		pointx = pointx * 160.0f;
+		pointy = pointy * 160.0f;
+
+
+		firstPointToHit.x = pointx;
+		firstPointToHit.y = pointy;
+
+		firstPointToHit.SnapInt();
+		firstPointToHit.z = pointz;
+		*/
+
+		//construct spawning entity
+		idDict entityDict;
+
+		const char* classname;
+
+		//generification to use def files on weapons. spawns any entity, not just turrets. need multiple def files.
+		classname = spawnArgs.GetString("spawning_entity_classname", "monster_turret");
+
+		//set class. this will be different. later if we make more, please change this to multiple turret.
+		entityDict.Set("classname", classname);
+		//set angle as 0, so new spawned turret faces one place, not the opposite of player.
+		entityDict.Set("angle", "0");
+		entityDict.Set("origin", firstPointToHit.ToString());
+
+
+		//uncomment this for debug output of location that is shot
+		//gameLocal.Printf("%s\n", firstPointToHit.ToString());
+
+		
+
+
+		idEntity *newEnt = NULL;
+		int cost;
+
+		cost = spawnArgs.GetInt("use_cost", "50");
+
+		
+
+		//spawn if only there is enough currency, and also make sure it is on platform not other way around
+		if (owner->inventory.scrap >= cost && firstPointToHit.z == 128)
+		{
+			owner->inventory.scrap = owner->inventory.scrap - cost;
+			PlayAnim(ANIMCHANNEL_ALL, "fire", 0);
+			gameLocal.SpawnEntityDef(entityDict, &newEnt);
+		}
+	}
+
+
+}
+//Engineering Mod END
+
+//hitscan copy
+
+idVec3 rvWeapon::HitFirstTrace(
+	const idDict&	hitscanDict,
+	const idVec3&	origOrigin,
+	const idVec3&	origDir,
+	const idVec3&	origFxOrigin,
+	idEntity*		owner,
+	bool			noFX,
+	// twhitaker: added additionalIgnore parameter
+	idEntity*		additionalIgnore,
+	int				areas[2])
+{
+	trace_t		tr;
+	idVec3		dir;
+	idVec3		origin;
+	idVec3		fxOrigin;
+	idVec3		fxDir;
+	idVec3		impulse;
+	idVec4		hitscanTint(1.0f, 1.0f, 1.0f, 1.0f);
+	float		tracerChance;
+	idEntity*	ignore;
+	float		penetrate;
+
+	if (areas) {
+		areas[0] = gameLocal.pvs.GetPVSArea(origFxOrigin);
+		areas[1] = -1;
+	}
+
+	ignore = owner;
+	penetrate = hitscanDict.GetFloat("penetrate");
+
+	if (hitscanDict.GetBool("hitscanTint") && owner->IsType(idPlayer::GetClassType())) {
+		hitscanTint = ((idPlayer*)owner)->GetHitscanTint();
+	}
+
+	// twhitaker: additionalIgnore parameter
+	if (!additionalIgnore) {
+		additionalIgnore = ignore;
+	}
+
+	origin = origOrigin;
+	fxOrigin = origFxOrigin;
+	dir = origDir;
+	tracerChance = ((g_perfTest_weaponNoFX.GetBool()) ? 0 : hitscanDict.GetFloat("tracerchance", "0"));
+
+	idVec3		start;
+	idVec3		end;
+	idEntity*	ent;
+	idEntity*	actualHitEnt;
+	int			contents;
+	int			collisionArea;
+	idVec3		collisionPoint;
+	bool		tracer;
+
+	// Calculate the end point of the trace
+	start = origin;
+	if (g_perfTest_hitscanShort.GetBool()) {
+		end = start + (dir.ToMat3() * idVec3(idMath::ClampFloat(0, 2048, hitscanDict.GetFloat("range", "2048")), 0, 0));
+	}
+	else {
+		end = start + (dir.ToMat3() * idVec3(hitscanDict.GetFloat("range", "40000"), 0, 0));
+	}
+	contents = MASK_SHOT_RENDERMODEL | CONTENTS_WATER | CONTENTS_PROJECTILE;
+
+	gameLocal.TracePoint(owner, tr, start, end, contents, additionalIgnore);
+
+
+
+	//uncomment this to see the tracking setup
+	//gameRenderWorld->DebugArrow(colorRed, start, end, 10, 5000);
+
+
+
+	// RAVEN END
+
+	// If the hitscan hit a no impact surface we can just return out
+	//assert( tr.c.material );
+	if (tr.fraction >= 1.0f || (tr.c.material && tr.c.material->GetSurfaceFlags() & SURF_NOIMPACT)) {
+		gameLocal.PlayEffect(hitscanDict, "fx_path", fxOrigin, dir.ToMat3(), false, tr.endpos, false, EC_IGNORE, hitscanTint);
+		if (gameLocal.random.RandomFloat() < tracerChance) {
+			gameLocal.PlayEffect(hitscanDict, "fx_tracer", fxOrigin, dir.ToMat3(), false, tr.endpos);
+			tracer = true;
+		}
+		else {
+			tracer = false;
+		}
+
+		if (areas) {
+			collisionArea = gameLocal.pvs.GetPVSArea(tr.endpos);
+			if (collisionArea != areas[0]) {
+				areas[1] = collisionArea;
+			}
+		}
+
+		idVec3 newvec;
+
+		return newvec;
+	}
+
+	// computing the collisionArea from the collisionPoint fails sometimes
+	if (areas) {
+		collisionArea = gameLocal.pvs.GetPVSArea(tr.c.point);
+		if (collisionArea != areas[0]) {
+			areas[1] = collisionArea;
+		}
+	}
+
+	collisionPoint = tr.c.point - (tr.c.normal * tr.c.point - tr.c.dist) * tr.c.normal;
+	ent = gameLocal.entities[tr.c.entityNum];
+	actualHitEnt = NULL;
+	start = collisionPoint;
+
+	assert(false);
+
+	return collisionPoint;
+}
+
+//Engineering End
 
 /*
 ================

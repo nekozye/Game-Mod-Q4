@@ -91,7 +91,8 @@ void rvMonsterGunner::Spawn ( void ) {
 	actionSideStepLeft.Init ( spawnArgs, "action_sideStepLeft", NULL, 0 );
 	actionSideStepRight.Init ( spawnArgs, "action_sideStepRight", NULL, 0 );
 	actionTimerSideStep.Init ( spawnArgs, "actionTimer_sideStep" );
-	
+
+
 	InitSpawnArgsVariables();
 }
 

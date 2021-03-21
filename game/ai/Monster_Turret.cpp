@@ -4,41 +4,9 @@
 
 #include "../Game_local.h"
 #include "AI_Manager.h"
+#include "Monster_Turret.h"
 
-class rvMonsterTurret : public idAI {
-public:
 
-	CLASS_PROTOTYPE( rvMonsterTurret );
-
-	rvMonsterTurret ( void );
-
-	void				InitSpawnArgsVariables	( void );
-	void				Spawn					( void );
-	void				Save					( idSaveGame *savefile ) const;
-	void				Restore					( idRestoreGame *savefile );
-
-	virtual bool		Pain					( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
-
-protected:
-
-	virtual bool		CheckActions			( void );
-
-	stateResult_t		State_Combat			( const stateParms_t& parms );
-	stateResult_t		State_Killed			( const stateParms_t& parms );
-
-	int					shieldHealth;
-	int					maxShots;	
-	int					minShots;
-	int					shots;
-
-private:
-
-	rvAIAction			actionBlasterAttack;
-
-	stateResult_t		State_Torso_BlasterAttack	( const stateParms_t& parms );
-
-	CLASS_STATES_PROTOTYPE ( rvMonsterTurret );
-};
 
 CLASS_DECLARATION( idAI, rvMonsterTurret )
 END_CLASS
@@ -57,6 +25,9 @@ rvMonsterTurret::rvMonsterTurret ( ) {
 void rvMonsterTurret::InitSpawnArgsVariables ( void ) {
 	maxShots	= spawnArgs.GetInt ( "maxShots", "1" );
 	minShots	= spawnArgs.GetInt ( "minShots", "1" );
+	upgradeMultBase = spawnArgs.GetInt("upgrade_base", "1");
+	maxUpgrades = spawnArgs.GetInt("upgrade_max", "5");
+	upgradeMultVal = 0;
 }
 /*
 ================
@@ -83,6 +54,7 @@ rvMonsterTurret::Save
 void rvMonsterTurret::Save ( idSaveGame *savefile ) const {
 	savefile->WriteInt ( shieldHealth );
 	savefile->WriteInt ( shots );
+	savefile->WriteInt(upgradeMultVal);
 	actionBlasterAttack.Save ( savefile );
 }
 
@@ -94,6 +66,7 @@ rvMonsterTurret::Restore
 void rvMonsterTurret::Restore ( idRestoreGame *savefile ) {
 	savefile->ReadInt ( shieldHealth );
 	savefile->ReadInt ( shots );
+	savefile->ReadInt	(upgradeMultVal);
 	actionBlasterAttack.Restore ( savefile );
 
 	InitSpawnArgsVariables();
@@ -111,6 +84,20 @@ bool rvMonsterTurret::CheckActions ( void ) {
 	}
 	return idAI::CheckActions ( );
 }
+
+/*
+================
+rvMonsterTurret::CheckActions
+================
+*/
+
+void rvMonsterTurret::upgradeTurretBasedOnStats(void) {
+	if (upgradeMultVal + 1 <= maxUpgrades)
+	{
+		upgradeMultVal = upgradeMultVal + 1;
+	}
+}
+
 
 /*
 ================
@@ -189,7 +176,7 @@ stateResult_t rvMonsterTurret::State_Torso_BlasterAttack ( const stateParms_t& p
 	switch ( parms.stage ) {
 		case STAGE_INIT:
 			DisableAnimState ( ANIMCHANNEL_LEGS );
-			shots = (minShots + gameLocal.random.RandomInt(maxShots-minShots+1)) * combat.aggressiveScale;
+			shots = ((upgradeMultVal-1)*upgradeMultBase)+((minShots + gameLocal.random.RandomInt(maxShots-minShots+1)) * combat.aggressiveScale)+1;
 			return SRESULT_STAGE ( STAGE_FIRE );
 			
 		case STAGE_FIRE:

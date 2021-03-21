@@ -3680,6 +3680,9 @@ idAI::
 */
 
 void idAI::OnDeath( void ){
+	//enemy drop
+
+
 	if( vehicleController.IsDriving() ){
 		usercmd_t				usercmd;
 

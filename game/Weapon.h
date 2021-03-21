@@ -52,6 +52,9 @@ public:
 	// Weapon definition management
 	void					Clear						( void );
 
+
+
+
 	// GUIs
 	void					PostGUIEvent				( const char* event );
 
@@ -129,6 +132,13 @@ public:
 	};
 	
 	void				Init						( idPlayer* _owner, const idDeclEntityDef* def, int weaponIndex, bool isStrogg = false );
+
+	//rv Weapon
+
+	//Engineering Mod Tracer
+
+	void				SpawnEntityBasedOnContact(void);
+	idVec3				HitFirstTrace(const idDict& hitscanDict, const idVec3& origOrigin, const idVec3& origDir, const idVec3& origFxOrigin, idEntity* owner, bool noFX, idEntity* additionalIgnore, int areas[2]);
 
 	// Virtual overrides
 	void				Spawn						( void );

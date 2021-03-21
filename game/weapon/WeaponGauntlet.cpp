@@ -494,7 +494,7 @@ stateResult_t rvWeaponGauntlet::State_Fire ( const stateParms_t& parms ) {
 			if ( !wsfl.attack || wsfl.lowerWeapon ) {
 				return SRESULT_STAGE ( STAGE_END );
 			}
-			Attack ( );
+			Attack();
 			return SRESULT_WAIT;
 		
 		case STAGE_END:
