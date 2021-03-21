@@ -146,8 +146,6 @@ void rvWeapon::SpawnEntityBasedOnContact() {
 	const char* classnameCheck = hitscan_hit_ent->GetClassname();
 	
 
-	gameLocal.Printf("%s\n", classnameCheck);
-
 
 	if (strcmp(classnameCheck, "rvMonsterTurret") == 0)
 	{
@@ -222,10 +220,6 @@ void rvWeapon::SpawnEntityBasedOnContact() {
 		//set angle as 0, so new spawned turret faces one place, not the opposite of player.
 		entityDict.Set("angle", "0");
 		entityDict.Set("origin", firstPointToHit.ToString());
-
-
-		//uncomment this for debug output of location that is shot
-		//gameLocal.Printf("%s\n", firstPointToHit.ToString());
 
 		
 

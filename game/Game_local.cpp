@@ -7619,7 +7619,6 @@ idEntity* idGameLocal::HitScan(
 				// twhitaker: additionalIgnore parameter
 				TracePoint( owner, tr, start, end, contents, additionalIgnore );
 			}
-			gameRenderWorld->DebugArrow( colorRed, start, end, 10, 5000 );
 // RAVEN END
 			
 			// If the hitscan hit a no impact surface we can just return out
