@@ -516,7 +516,6 @@
     <ClCompile Include="game\mp\stats\StatWindow.cpp">
       <Filter>Game\MP\Stats</Filter>
     </ClCompile>
-    <ClCompile Include="game\ai\AI_Turret.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game\Actor.h">

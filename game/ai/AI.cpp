@@ -3683,6 +3683,8 @@ void idAI::OnDeath( void ){
 	//enemy drop
 
 
+
+
 	if( vehicleController.IsDriving() ){
 		usercmd_t				usercmd;
 
@@ -3694,6 +3696,16 @@ void idAI::OnDeath( void ){
 
 		// Fixme!  Is this safe to do immediately?
 		vehicleController.Eject();
+	}
+
+	//Engineering Mod, added scrap drop function. will be ignored if no def file mentions it
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	
+	int deathScrapDrop = spawnArgs.GetInt("scrap_drop", "0");
+	player->inventory.scrap += deathScrapDrop;
+	if (player->inventory.scrap > player->inventory.maxscrap)
+	{
+		player->inventory.scrap = player->inventory.maxscrap;
 	}
 
 	aiManager.RemoveTeammate ( this );

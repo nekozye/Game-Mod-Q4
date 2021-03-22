@@ -146,14 +146,16 @@ void rvWeapon::SpawnEntityBasedOnContact() {
 	const char* classnameCheck = hitscan_hit_ent->GetClassname();
 	
 
-
 	if (strcmp(classnameCheck, "rvMonsterTurret") == 0)
 	{
 		rvMonsterTurret* modified_entity = (rvMonsterTurret*)hitscan_hit_ent;
-		int up_cost = spawnArgs.GetInt("upgrade_cost", "20");
 
+		
+
+		int up_cost = spawnArgs.GetInt("upgrade_cost", "20");
 		const char* orig_classname = spawnArgs.GetString("spawning_entity_classname", "monster_turret");
-		const char* picked_classname = dict.GetString("spawning_entity_classname", "monster_turret");
+		const char* picked_classname = modified_entity->GetEntityDefName();
+		
 
 
 		if (owner->inventory.scrap >= up_cost && strcmp(orig_classname, picked_classname) == 0)

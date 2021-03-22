@@ -217,7 +217,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="game\AFEntity.cpp" />
-    <ClCompile Include="game\ai\AI_Turret.cpp" />
     <ClCompile Include="game\BrittleFracture.cpp" />
     <ClCompile Include="game\Camera.cpp" />
     <ClCompile Include="game\client\ClientAFEntity.cpp" />
