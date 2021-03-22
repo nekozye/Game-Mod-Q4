@@ -16,7 +16,7 @@ public:
 
 	virtual bool		Pain(idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location);
 
-	void				upgradeTurretBasedOnStats(void);
+	bool				upgradeTurretBasedOnStats(void);
 
 protected:
 

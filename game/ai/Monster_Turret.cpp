@@ -91,11 +91,13 @@ rvMonsterTurret::CheckActions
 ================
 */
 
-void rvMonsterTurret::upgradeTurretBasedOnStats(void) {
+bool rvMonsterTurret::upgradeTurretBasedOnStats(void) {
 	if (upgradeMultVal + 1 <= maxUpgrades)
 	{
 		upgradeMultVal = upgradeMultVal + 1;
+		return true;
 	}
+	return false;
 }
 
 

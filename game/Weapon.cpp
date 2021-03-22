@@ -158,9 +158,15 @@ void rvWeapon::SpawnEntityBasedOnContact() {
 
 		if (owner->inventory.scrap >= up_cost && strcmp(orig_classname, picked_classname) == 0)
 		{
-			PlayAnim(ANIMCHANNEL_ALL, "fire", 0);
-			modified_entity->upgradeTurretBasedOnStats();
-			owner->inventory.scrap = owner->inventory.scrap - up_cost;
+
+			bool sucess;
+			sucess = modified_entity->upgradeTurretBasedOnStats();
+
+			if (sucess)
+			{
+				PlayAnim(ANIMCHANNEL_ALL, "fire", 0);
+				owner->inventory.scrap = owner->inventory.scrap - up_cost;
+			}
 		}
 		
 	}
